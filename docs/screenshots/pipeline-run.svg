@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="609" viewBox="0 0 1180 609">
+<rect x="0" y="0" width="1180" height="609" rx="10" fill="#0d1117"/>
+<rect x="0" y="0" width="1180" height="42" rx="10" fill="#161b22"/>
+<rect x="0" y="32" width="1180" height="10" rx="0" fill="#161b22"/>
+<circle cx="22" cy="21" r="6" fill="#ff5f56"/>
+<circle cx="42" cy="21" r="6" fill="#ffbd2e"/>
+<circle cx="62" cy="21" r="6" fill="#27c93f"/>
+<text x="1054" y="26" font-family="Consolas, Menlo, monospace" font-size="13" fill="#6e7681">sovits-train</text>
+<text x="26" y="66" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">$ sovits-train run --voice demo</text>
+<text x="26" y="120" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#d29922" xml:space="preserve">! 推理网关在线（http://127.0.0.1:9881），训练会与它抢显存；建议先停掉网关</text>
+<text x="26" y="174" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#c9d1d9" xml:space="preserve">完成。执行的阶段： slice, asr, prep, s2, s1, register</text>
+<text x="26" y="201" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#c9d1d9" xml:space="preserve">任务: demo</text>
+<text x="26" y="228" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">  ✓ slice      音频切片           wav</text>
+<text x="26" y="255" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">  ✓ asr        语音识别标注         demo.list</text>
+<text x="26" y="282" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">  ✓ prep       特征提取           6-name2semantic-0.tsv</text>
+<text x="26" y="309" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">  ✓ s2         训练 SoVITS</text>
+<text x="26" y="336" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">  ✓ s1         训练 GPT</text>
+<text x="26" y="363" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#7ee787" xml:space="preserve">  ✓ register   登记产物           voices.json</text>
+<text x="26" y="417" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#79c0ff" xml:space="preserve">产物：</text>
+<text x="26" y="444" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#79c0ff" xml:space="preserve">  SoVITS: demo_e8_s200.pth</text>
+<text x="26" y="471" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#79c0ff" xml:space="preserve">  GPT   : demo-e2.ckpt</text>
+<text x="26" y="498" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#79c0ff" xml:space="preserve">  交接单: voice-tasks/demo/voices.json</text>
+<text x="26" y="552" font-family="Cascadia Code, Consolas, Menlo, monospace" font-size="15" fill="#6e7681" xml:space="preserve"># 任何一步挂了都能 --from &lt;stage&gt; 续跑，已完成的步骤不会重做</text>
+</svg>

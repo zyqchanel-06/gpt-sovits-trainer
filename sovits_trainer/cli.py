@@ -205,8 +205,14 @@ def cmd_list(args: argparse.Namespace) -> int:
 def cmd_reset(args: argparse.Namespace) -> int:
     config = _config(args)
     task = _require_task(config, args.voice)
-    reset = task.reset_from(args.stage)
+    purge = (lambda name: config.stage_dir(task.voice, name)) if args.purge else None
+    reset = task.reset_from(args.stage, purge_dir=purge)
     print("已重置：", ", ".join(reset))
+    if args.purge:
+        print("产物目录也已清空（上游预处理是增量式的，不清理会沿用旧数据）")
+    else:
+        print("提示：上游预处理脚本是增量式的（产物存在就跳过）。"
+              "改了数据要重算请加 --purge")
     print(task.summary())
     return 0
 
@@ -353,6 +359,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_reset = sub.add_parser("reset", help="重置某阶段及之后")
     p_reset.add_argument("--voice", required=True)
     p_reset.add_argument("--stage", required=True, choices=list(STAGES))
+    p_reset.add_argument("--purge", action="store_true",
+                         help="同时删除该阶段的产物目录（改数据后必须加，否则上游会跳过重算）")
     p_reset.set_defaults(func=cmd_reset)
 
     p_export = sub.add_parser("export", help="重新登记产物（可指定 epoch）")

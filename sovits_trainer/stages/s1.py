@@ -102,10 +102,22 @@ def run(
     # 注意上游产物带分片后缀（-0），所以用 glob 而不是写死文件名
     exp_dir = config.stage_dir(task.voice, "prep")
     for pattern, label in (("6-name2semantic*.tsv", "语义特征"), ("2-name2text*.txt", "文本特征")):
-        if not list(exp_dir.glob(pattern)):
+        hits = list(exp_dir.glob(pattern))
+        if not hits:
             raise FileNotFoundError(
                 "缺少%s（%s）—— 请先跑完 prep 阶段（特征提取）" % (label, pattern)
             )
+
+    # 样本数下限：GPT 训练要按长度切 batch，单条样本会触发上游 ZeroDivisionError
+    semantic_file = sorted(exp_dir.glob("6-name2semantic*.tsv"))[0]
+    sample_count = sum(1 for line in semantic_file.read_text(encoding="utf-8", errors="replace").splitlines()
+                       if line.strip())
+    if sample_count < 2:
+        raise RuntimeError(
+            "GPT 训练至少需要 2 条样本，当前只有 %d 条。\n"
+            "上游 s1_train.py 会按样本长度切 batch，单条会抛 ZeroDivisionError。\n"
+            "请补更多音频/标注后重跑 prep 与 s1。" % sample_count
+        )
 
     data = build_config(
         config, task,

@@ -6,6 +6,8 @@
 [![Release](https://img.shields.io/github/v/release/zyqchanel-06/gpt-sovits-trainer?color=blue)](https://github.com/zyqchanel-06/gpt-sovits-trainer/releases)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
+![六步流水线跑通的真实输出](docs/screenshots/pipeline-run.svg)
+
 ---
 
 ## 它解决什么问题

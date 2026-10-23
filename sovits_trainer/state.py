@@ -155,8 +155,15 @@ class Task:
                 return name
         return None
 
-    def reset_from(self, stage: str) -> List[str]:
-        """把 stage 及其之后的所有步骤重置为 pending（重跑用）。"""
+    def reset_from(self, stage: str, purge_dir=None) -> List[str]:
+        """把 stage 及其之后的所有步骤重置为 pending（重跑用）。
+
+        purge_dir(stage) -> Path 被传入时会**删除该阶段的产物目录**。
+        这一步很关键：GPT-SoVITS 的预处理脚本是增量式的（产物存在就整段跳过），
+        只重置状态而不删产物，会出现「看起来重跑了、其实用的还是旧数据」。
+        """
+        import shutil
+
         reset = []
         hit = False
         for name in STAGES:
@@ -165,6 +172,13 @@ class Task:
             if hit:
                 self.stages[name] = StageRecord()
                 reset.append(name)
+                if purge_dir is not None:
+                    try:
+                        target = Path(purge_dir(name))
+                        if target.exists():
+                            shutil.rmtree(target)
+                    except OSError:
+                        pass
         self.save()
         return reset
 
