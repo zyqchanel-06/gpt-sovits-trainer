@@ -9,3 +9,8 @@ venv/
 voice-tasks/
 .sovits-trainer.json
 *.log
+
+smoke.list
+smoke-input.wav
+*.list
+
