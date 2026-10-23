@@ -60,6 +60,67 @@ def _is_error(line: str) -> bool:
     return any(pattern.search(line) for pattern in ERROR_PATTERNS)
 
 
+def child_pythonpath(cwd: Path) -> str:
+    """给子进程准备 PYTHONPATH。
+
+    为什么需要：GPT-SoVITS 的脚本互相 import（slice_audio.py 要 import tools.my_utils，
+    prepare_datasets 要 import GPT_SoVITS 里的模块）。官方做法是往 site-packages 写一个
+    users.pth（见 webui.py），但那只对"跑过 webui 的那套环境"有效。
+    这里改用 PYTHONPATH 显式传下去，不依赖任何全局状态。
+    """
+    cwd = Path(cwd)
+    if not (cwd / "webui.py").exists():
+        return ""
+    candidates = [
+        cwd,
+        cwd / "GPT_SoVITS",
+        cwd / "GPT_SoVITS" / "BigVGAN",
+        cwd / "tools",
+        cwd / "tools" / "asr",
+        cwd / "tools" / "uvr5",
+    ]
+    return os.pathsep.join(str(path) for path in candidates if path.exists())
+
+
+BOOTSTRAP = (
+    "import os, runpy, sys\n"
+    "paths, script = sys.argv[1], sys.argv[2]\n"
+    "for item in reversed(paths.split(os.pathsep)):\n"
+    "    if item and item not in sys.path:\n"
+    "        sys.path.insert(0, item)\n"
+    "sys.argv = [script] + sys.argv[3:]\n"
+    "runpy.run_path(script, run_name='__main__')\n"
+)
+
+
+def is_embedded_python(python: str) -> bool:
+    """嵌入式发行版（ComfyUI 那种 python_embeded）会忽略 PYTHONPATH。
+
+    判据：同目录下存在 python*._pth。
+    """
+    try:
+        path = Path(python)
+        return path.exists() and any(path.parent.glob("python*._pth"))
+    except OSError:
+        return False
+
+
+def wrap_for_embedded(cmd: List[str], injected: str) -> List[str]:
+    """把 `python -s script args...` 改写成 `python -c BOOTSTRAP paths script args...`。
+
+    这样 sys.path 由我们显式插入，不依赖 PYTHONPATH 是否被尊重。
+    """
+    if not injected or not cmd:
+        return cmd
+    rest = [str(part) for part in cmd[1:]]
+    while rest and rest[0].startswith("-"):
+        rest = rest[1:]  # 去掉 -s / -u 这类解释器开关
+    if not rest:
+        return cmd
+    script, args = rest[0], rest[1:]
+    return [str(cmd[0]), "-c", BOOTSTRAP, injected, script] + args
+
+
 def run_step(
     name: str,
     cmd: List[str],
@@ -79,6 +140,15 @@ def run_step(
     merged_env = os.environ.copy()
     if env:
         merged_env.update({k: str(v) for k, v in env.items()})
+
+    # 自动注入 PYTHONPATH（GPT-SoVITS 的脚本靠它互相 import）
+    injected = child_pythonpath(Path(cwd))
+    if injected:
+        existing = merged_env.get("PYTHONPATH", "")
+        merged_env["PYTHONPATH"] = injected + (os.pathsep + existing if existing else "")
+        # 嵌入式 python 不认 PYTHONPATH，改用 -c bootstrap 显式注入
+        if is_embedded_python(cmd[0]):
+            cmd = wrap_for_embedded(cmd, injected)
 
     started = time.time()
     errors: List[str] = []

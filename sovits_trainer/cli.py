@@ -26,6 +26,8 @@ def _config(args: argparse.Namespace) -> TrainerConfig:
         config.work_root = Path(args.work_root).expanduser().resolve()
     if getattr(args, "weights_dir", None):
         config.weights_dir = Path(args.weights_dir).expanduser().resolve()
+    if getattr(args, "python", None):
+        config.python = str(args.python)
     config.validate()
     return config
 
@@ -75,6 +77,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "GPT_SoVITS/configs/s2.json"):
         path = config.gpt_sovits_root / rel
         print(("  %s %s" % ("✓" if path.exists() else "✗", rel)))
+
+    # 训练依赖体检：这一步最容易在"跑到一半"才炸
+    from .config import OPTIONAL_MODULES, REQUIRED_MODULES, probe_modules
+
+    found = probe_modules(config.python, REQUIRED_MODULES + OPTIONAL_MODULES)
+    missing = [name for name in REQUIRED_MODULES if not found.get(name)]
+    optional_missing = [name for name in OPTIONAL_MODULES if not found.get(name)]
+    if missing:
+        print("  ✗ 缺少必需依赖：%s" % ", ".join(missing))
+        print("    这个解释器跑不了训练。用 --python 指向装了 torch 的环境，")
+        print("    或按 GPT-SoVITS 的 requirements 装依赖。")
+    else:
+        print("  ✓ 训练依赖齐备（%s）" % ", ".join(REQUIRED_MODULES))
+    if optional_missing:
+        print("  · 可选依赖缺失：%s（gpt 训练/ASR 可能用得上）" % ", ".join(optional_missing))
 
     cards = gpu.gpu_info()
     if cards:
@@ -280,6 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gpt-sovits-root", help="GPT-SoVITS 仓库根目录")
     parser.add_argument("--work-root", help="任务目录（默认 ./voice-tasks）")
     parser.add_argument("--weights-dir", help="权重输出目录")
+    parser.add_argument("--python", help="训练用的 Python 解释器（必须是装了 torch 的那套环境）")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_doctor = sub.add_parser("doctor", help="检查环境是否就绪")

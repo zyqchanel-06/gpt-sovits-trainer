@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,9 +33,44 @@ def looks_like_gpt_sovits(path: Path) -> bool:
     return (path / "webui.py").exists() and (path / "GPT_SoVITS").is_dir()
 
 
+# 训练链路真正需要的第三方包（缺一个都跑不完整）
+REQUIRED_MODULES = ("numpy", "torch", "scipy", "librosa", "yaml")
+OPTIONAL_MODULES = ("pytorch_lightning", "funasr")
+
+
 def detect_python() -> str:
     """默认用当前解释器：训练脚本和 trainer 共用同一套依赖最省事。"""
     return os.environ.get("SOVITS_TRAINER_PYTHON") or sys.executable
+
+
+def probe_modules(python: str, modules=REQUIRED_MODULES) -> Dict[str, bool]:
+    """问某个解释器：这些包装了没有。
+
+    用子进程问，避免把训练依赖 import 进 trainer 自己的进程（可能全是缺失的）。
+    """
+    code = (
+        "import importlib, json, sys\n"
+        "out = {}\n"
+        "for name in %r:\n"
+        "    try:\n"
+        "        importlib.import_module(name); out[name] = True\n"
+        "    except Exception:\n"
+        "        out[name] = False\n"
+        "print(json.dumps(out))\n"
+    ) % (tuple(modules),)
+    try:
+        result = subprocess.run(
+            [str(python), "-c", code],
+            capture_output=True, text=True, timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {name: False for name in modules}
+    if result.returncode != 0:
+        return {name: False for name in modules}
+    try:
+        return json.loads(result.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        return {name: False for name in modules}
 
 
 @dataclass
