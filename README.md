@@ -3,6 +3,7 @@
 **GPT-SoVITS 训练编排器**：一条命令，从「一段录音」到「推理网关里能直接用的音色」。
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/zyqchanel-06/gpt-sovits-trainer?color=blue)](https://github.com/zyqchanel-06/gpt-sovits-trainer/releases)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
 ---
