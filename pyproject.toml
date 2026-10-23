@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpt-sovits-trainer"
+version = "0.1.0"
+description = "GPT-SoVITS 训练编排器：六步流水线 + 断点续跑 + 与推理网关交接"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "zyqchanel-06" }]
+keywords = ["gpt-sovits", "tts", "voice-cloning", "training", "pipeline", "fine-tuning"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = ["PyYAML>=6"]
+
+[project.scripts]
+sovits-train = "sovits_trainer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/zyqchanel-06/gpt-sovits-trainer"
+
+[tool.setuptools.packages.find]
+include = ["sovits_trainer*"]
