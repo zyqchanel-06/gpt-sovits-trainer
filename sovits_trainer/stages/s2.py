@@ -105,6 +105,9 @@ def run(
         text_low_lr_rate=text_low_lr_rate, lora_rank=lora_rank, grad_ckpt=grad_ckpt,
         pretrained_s2G=pretrained_s2G, pretrained_s2D=pretrained_s2D,
     )
+    # 上游 webui 在开训前会 makedirs，s2_train.py 自己不创建 —— 缺了会在保存时炸
+    exp_dir = config.stage_dir(task.voice, "prep")
+    (exp_dir / ("logs_s2_" + config.version)).mkdir(parents=True, exist_ok=True)
     tmp_config = write_config(config, task, data)
     return run_step(
         "s2",

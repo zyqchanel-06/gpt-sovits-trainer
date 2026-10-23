@@ -238,19 +238,32 @@ def _do_sync(
     voices_file: str,
 ) -> None:
     gateway_path = Path(args.gateway).expanduser().resolve()
-    list_path = Path(chosen.get("list_path") or "")
+
+    # 参考音频/文本来源优先级：命令行显式指定 > 任务里记的标注 > 工作目录里任意 .list
     sample = None
-    candidates = [task.meta.get(DEFAULTS_KEY, {}).get("list_path"), voices_file]
-    for candidate in candidates:
-        if candidate and Path(candidate).suffix == ".list" and Path(candidate).exists():
-            sample = gateway_mod.read_first_sample(Path(candidate))
-            break
-    if sample is None:
-        # 从 prep 目录里找找 ASR/用户提供的标注
-        for found in (config.work_root / task.voice).rglob("*.list"):
-            sample = gateway_mod.read_first_sample(found)
-            if sample:
-                break
+    explicit_audio = getattr(args, "ref_audio", None)
+    explicit_text = getattr(args, "ref_text", None)
+    if explicit_audio and explicit_text:
+        sample = {
+            "wav": str(Path(explicit_audio).expanduser().resolve()),
+            "text": explicit_text,
+            "lang": "zh",
+        }
+    else:
+        candidates = [
+            task.meta.get(DEFAULTS_KEY, {}).get("list_path"),
+            task.stages["asr"].artifact,
+        ]
+        for candidate in candidates:
+            if candidate and Path(candidate).suffix == ".list" and Path(candidate).exists():
+                sample = gateway_mod.read_first_sample(Path(candidate))
+                if sample:
+                    break
+        if sample is None:
+            for found in (config.work_root / task.voice).rglob("*.list"):
+                sample = gateway_mod.read_first_sample(found)
+                if sample:
+                    break
     if sample is None:
         print("! 找不到标注文件，无法自动填参考音频/文本")
         print("  请用 --ref-audio 和 --ref-text 手动指定（网关的 voice 必须有这两个字段）")
@@ -351,6 +364,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_sync.add_argument("--voice", required=True)
     p_sync.add_argument("--gateway", required=True, help="网关 config.json 路径")
     p_sync.add_argument("--epoch", type=int)
+    p_sync.add_argument("--ref-audio", dest="ref_audio", help="参考音频（不填则从标注里取第一条）")
+    p_sync.add_argument("--ref-text", dest="ref_text", help="参考音频对应的文本")
     p_sync.set_defaults(func=cmd_sync)
 
     return parser

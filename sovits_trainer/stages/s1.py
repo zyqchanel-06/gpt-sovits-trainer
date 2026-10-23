@@ -68,8 +68,11 @@ def build_config(
         data["train"]["precision"] = "32"
         data["train"]["batch_size"] = max(1, batch_size // 2)
     data["pretrained_s1"] = pretrained_s1 or default_pretrained(config)
-    data["train_semantic_path"] = str(exp_dir / "6-name2semantic.tsv")
-    data["train_phoneme_path"] = str(exp_dir / "2-name2text.txt")
+    # 用实际存在的（带分片后缀的）文件路径，别写死
+    semantic = sorted(exp_dir.glob("6-name2semantic*.tsv"))
+    phoneme = sorted(exp_dir.glob("2-name2text*.txt"))
+    data["train_semantic_path"] = str(semantic[0] if semantic else exp_dir / "6-name2semantic.tsv")
+    data["train_phoneme_path"] = str(phoneme[0] if phoneme else exp_dir / "2-name2text.txt")
     data["output_dir"] = str(exp_dir / ("logs_s1_" + config.version))
     return data
 
@@ -96,11 +99,12 @@ def run(
     if_dpo: bool = False,
 ) -> StepResult:
     # 先验证上游产物在不在（s1 依赖 prep 阶段的两个文件）
+    # 注意上游产物带分片后缀（-0），所以用 glob 而不是写死文件名
     exp_dir = config.stage_dir(task.voice, "prep")
-    for required in ("6-name2semantic.tsv", "2-name2text.txt"):
-        if not (exp_dir / required).exists():
+    for pattern, label in (("6-name2semantic*.tsv", "语义特征"), ("2-name2text*.txt", "文本特征")):
+        if not list(exp_dir.glob(pattern)):
             raise FileNotFoundError(
-                "缺少 %s —— 请先跑完 prep 阶段（特征提取）" % required
+                "缺少%s（%s）—— 请先跑完 prep 阶段（特征提取）" % (label, pattern)
             )
 
     data = build_config(
@@ -108,6 +112,8 @@ def run(
         batch_size=batch_size, epochs=epochs, save_every_epoch=save_every_epoch,
         pretrained_s1=pretrained_s1, if_dpo=if_dpo,
     )
+    # 同 s2：上游 webui 会预先建目录，这里必须补上
+    (exp_dir / "logs_s1").mkdir(parents=True, exist_ok=True)
     tmp_config = write_config(config, task, data)
     return run_step(
         "s1",

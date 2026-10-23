@@ -62,7 +62,12 @@ def run_stage(
         return outcome["list_path"]
 
     if stage == "prep":
-        list_path = options.get("resolved_list")
+        # 标注来源优先级：显式参数 > 上一步（asr）登记的产物 > init 时存的默认值
+        list_path = (
+            options.get("resolved_list")
+            or task.stages["asr"].artifact
+            or options.get("list_path")
+        )
         if not list_path:
             raise PipelineError("缺少标注文件：先跑 asr 阶段，或用 --list 指定")
         sliced = str(config.stage_dir(task.voice, "slice") / "wav")

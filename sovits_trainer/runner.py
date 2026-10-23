@@ -141,6 +141,17 @@ def run_step(
     if env:
         merged_env.update({k: str(v) for k, v in env.items()})
 
+    # GPT-SoVITS 的 load_audio 直接调 `ffmpeg`（依赖 PATH）。
+    # 找不到就把它所在目录塞进子进程 PATH，避免 WinError 2。
+    from .config import find_ffmpeg  # 局部导入：config 不依赖 runner，避免循环
+
+    ffmpeg_path = find_ffmpeg()
+    if ffmpeg_path:
+        ffmpeg_dir = str(Path(ffmpeg_path).parent)
+        current_path = merged_env.get("PATH", "")
+        if ffmpeg_dir.lower() not in current_path.lower():
+            merged_env["PATH"] = ffmpeg_dir + os.pathsep + current_path
+
     # 自动注入 PYTHONPATH（GPT-SoVITS 的脚本靠它互相 import）
     injected = child_pythonpath(Path(cwd))
     if injected:

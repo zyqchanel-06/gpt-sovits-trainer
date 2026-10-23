@@ -38,6 +38,40 @@ REQUIRED_MODULES = ("numpy", "torch", "scipy", "librosa", "yaml")
 OPTIONAL_MODULES = ("pytorch_lightning", "funasr")
 
 
+# ffmpeg 常见位置（GPT-SoVITS 的 load_audio 直接调 `ffmpeg`，依赖 PATH）
+FFMPEG_CANDIDATES = (
+    "C:/ffmpeg/bin/ffmpeg.exe",
+    "D:/ffmpeg/bin/ffmpeg.exe",
+    "E:/ffmpeg/bin/ffmpeg.exe",
+)
+
+
+def find_ffmpeg(configured: Optional[str] = None) -> Optional[str]:
+    """找 ffmpeg 可执行文件；找不到返回 None。"""
+    import shutil
+
+    if configured:
+        candidate = Path(configured)
+        if candidate.exists():
+            return str(candidate)
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    for pattern in FFMPEG_CANDIDATES:
+        if Path(pattern).exists():
+            return pattern
+    # winget / scoop 安装后可能在用户目录
+    for base in (
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WinGet" / "Packages",
+        Path.home() / "scoop" / "shims",
+    ):
+        if not base.exists():
+            continue
+        for candidate in base.glob("**/ffmpeg.exe"):
+            return str(candidate)
+    return None
+
+
 def detect_python() -> str:
     """默认用当前解释器：训练脚本和 trainer 共用同一套依赖最省事。"""
     return os.environ.get("SOVITS_TRAINER_PYTHON") or sys.executable
