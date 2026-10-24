@@ -157,6 +157,37 @@ python -m unittest discover -s tests -v
 
 26 个用例全部 dry-run（造一个假的 GPT-SoVITS 目录结构），**不需要显卡、不需要真训练**。
 
+## Roadmap
+
+**已完成**
+- 六步流水线（slice / asr / prep / s2 / s1 / register）
+- 状态机断点续跑（`--from <stage>`）
+- 训练前体检（显存、依赖、推理服务冲突）
+- `sync` 一键写入推理网关配置
+
+**计划中**
+- ASR 后端更多选择（当前支持 faster-whisper / funasr）
+- 训练参数预设（快速试听 / 正式训练两档）
+- 训练过程的可视化进度（对接 TensorBoard 日志）
+
+**暂不考虑**
+- 重写上游训练逻辑（保持 subprocess 调用官方脚本，上游升级只需改参数映射）
+- 云端训练
+
+---
+
+## 参与与反馈
+
+这个项目最大的价值是**踩坑记录**。如果你遇到上游脚本的新兼容问题，欢迎带上完整日志开 Issue——多一个人踩过，下一个人就少踩一次。
+
+```bash
+python -m unittest discover -s tests
+```
+
+改上游调用相关代码时，请说明你在哪个 GPT-SoVITS 版本上验证过。
+
+---
+
 ## License
 
 MIT —— 见 [LICENSE](LICENSE)。
